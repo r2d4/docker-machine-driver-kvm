@@ -1,0 +1,91 @@
+{
+	"ImportPath": "github.com/r2d4/kvm-libmachine",
+	"GoVersion": "go1.7",
+	"GodepVersion": "v74",
+	"Packages": [
+		"./..."
+	],
+	"Deps": [
+		{
+			"ImportPath": "github.com/docker/docker/pkg/term",
+			"Comment": "v1.11.2",
+			"Rev": "b9f10c951893f9a00865890a5232e85d770c1087"
+		},
+		{
+			"ImportPath": "github.com/docker/machine/libmachine/drivers",
+			"Comment": "docs-v0.8.2-2016-09-26-11-g91e368e",
+			"Rev": "91e368eb7422665278b1d5665139ee0f9980b588"
+		},
+		{
+			"ImportPath": "github.com/docker/machine/libmachine/drivers/plugin",
+			"Comment": "docs-v0.8.2-2016-09-26-11-g91e368e",
+			"Rev": "91e368eb7422665278b1d5665139ee0f9980b588"
+		},
+		{
+			"ImportPath": "github.com/docker/machine/libmachine/drivers/plugin/localbinary",
+			"Comment": "docs-v0.8.2-2016-09-26-11-g91e368e",
+			"Rev": "91e368eb7422665278b1d5665139ee0f9980b588"
+		},
+		{
+			"ImportPath": "github.com/docker/machine/libmachine/drivers/rpc",
+			"Comment": "docs-v0.8.2-2016-09-26-11-g91e368e",
+			"Rev": "91e368eb7422665278b1d5665139ee0f9980b588"
+		},
+		{
+			"ImportPath": "github.com/docker/machine/libmachine/log",
+			"Comment": "docs-v0.8.2-2016-09-26-11-g91e368e",
+			"Rev": "91e368eb7422665278b1d5665139ee0f9980b588"
+		},
+		{
+			"ImportPath": "github.com/docker/machine/libmachine/mcnflag",
+			"Comment": "docs-v0.8.2-2016-09-26-11-g91e368e",
+			"Rev": "91e368eb7422665278b1d5665139ee0f9980b588"
+		},
+		{
+			"ImportPath": "github.com/docker/machine/libmachine/mcnutils",
+			"Comment": "docs-v0.8.2-2016-09-26-11-g91e368e",
+			"Rev": "91e368eb7422665278b1d5665139ee0f9980b588"
+		},
+		{
+			"ImportPath": "github.com/docker/machine/libmachine/ssh",
+			"Comment": "docs-v0.8.2-2016-09-26-11-g91e368e",
+			"Rev": "91e368eb7422665278b1d5665139ee0f9980b588"
+		},
+		{
+			"ImportPath": "github.com/docker/machine/libmachine/state",
+			"Comment": "docs-v0.8.2-2016-09-26-11-g91e368e",
+			"Rev": "91e368eb7422665278b1d5665139ee0f9980b588"
+		},
+		{
+			"ImportPath": "github.com/docker/machine/libmachine/version",
+			"Comment": "docs-v0.8.2-2016-09-26-11-g91e368e",
+			"Rev": "91e368eb7422665278b1d5665139ee0f9980b588"
+		},
+		{
+			"ImportPath": "github.com/docker/machine/version",
+			"Comment": "docs-v0.8.2-2016-09-26-11-g91e368e",
+			"Rev": "91e368eb7422665278b1d5665139ee0f9980b588"
+		},
+		{
+			"ImportPath": "github.com/libvirt/libvirt-go",
+			"Rev": "3d300833767d3cc5cbb1c1d4d1780ede199eed61"
+		},
+		{
+			"ImportPath": "github.com/pkg/errors",
+			"Comment": "v0.7.0-13-ga221380",
+			"Rev": "a22138067af1c4942683050411a841ade67fe1eb"
+		},
+		{
+			"ImportPath": "golang.org/x/crypto/curve25519",
+			"Rev": "1f22c0103821b9390939b6776727195525381532"
+		},
+		{
+			"ImportPath": "golang.org/x/crypto/ssh",
+			"Rev": "1f22c0103821b9390939b6776727195525381532"
+		},
+		{
+			"ImportPath": "golang.org/x/crypto/ssh/terminal",
+			"Rev": "1f22c0103821b9390939b6776727195525381532"
+		}
+	]
+}
