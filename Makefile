@@ -1,9 +1,9 @@
 
 # The binary to build (just the basename).
-BIN := kvm-libmachine
+BIN := docker-machine-driver-kvm
 
 # This repo's root import path (under GOPATH).
-PKG := github.com/r2d4/kvm-libmachine
+PKG := github.com/r2d4/docker-machine-driver-kvm
 
 # Where to push the docker image.
 REGISTRY ?= r2d4
@@ -38,7 +38,7 @@ BUILD_IMAGE ?= $(PKG)-build
 all: build
 
 install: all
-	sudo mv ./bin/amd64/kvm-libmachine /usr/local/bin/docker-machine-driver-kvm
+	sudo mv ./bin/amd64/docker-machine-driver-kvm /usr/local/bin/docker-machine-driver-kvm
 
 build-%:
 	@$(MAKE) --no-print-directory ARCH=$* build

@@ -9,7 +9,7 @@ package main
 
 import (
 	"github.com/docker/machine/libmachine/drivers/plugin"
-	kvm "github.com/r2d4/kvm-libmachine/pkg/kvm"
+	kvm "github.com/r2d4/docker-machine-driver-kvm/pkg/kvm"
 )
 
 func main() {
