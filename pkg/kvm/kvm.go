@@ -214,33 +214,33 @@ func (d *Driver) Restart() error {
 }
 
 func (d *Driver) Start() error {
-	log.Debug("Getting domain xml...")
+	log.Info("Getting domain xml...")
 	dom, conn, err := d.getDomain()
 	if err != nil {
 		return errors.Wrap(err, "getting connection")
 	}
 	defer closeDomain(dom, conn)
 
-	log.Debug("Creating domain...")
+	log.Info("Creating domain...")
 	if err := dom.Create(); err != nil {
 		return errors.Wrap(err, "Error creating VM")
 	}
 
+	log.Info("Waiting to get IP...")
 	time.Sleep(5 * time.Second)
 	for i := 0; i <= 40; i++ {
 		ip, err := d.GetIP()
-		if err != nil || ip == "" {
-			if err != nil {
-				d.IPAddress = ""
-				log.Debug(err)
-			}
+		if err != nil {
+			return errors.Wrap(err, "getting ip during machine start")
+		}
+		if ip == "" {
 			log.Debugf("Waiting for machine to come up %d/%d", i, 40)
 			time.Sleep(3 * time.Second)
 			continue
 		}
 
 		if ip != "" {
-			log.Debugf("Found IP for machine: %s", ip)
+			log.Infof("Found IP for machine: %s", ip)
 			d.IPAddress = ip
 			break
 		}
@@ -250,6 +250,7 @@ func (d *Driver) Start() error {
 		return errors.New("Machine didn't return an IP after 120 seconds")
 	}
 
+	log.Info("Waiting for SSH to be available...")
 	if err := drivers.WaitForSSH(d); err != nil {
 		d.IPAddress = ""
 		return errors.Wrap(err, "SSH not available after waiting")
@@ -259,23 +260,26 @@ func (d *Driver) Start() error {
 }
 
 func (d *Driver) Create() error {
+	log.Info("Creating machine...")
+
 	//TODO(r2d4): rewrite this, not using b2dutils
 	b2dutils := mcnutils.NewB2dUtils(d.StorePath)
 	if err := b2dutils.CopyIsoToMachineDir(d.IsoURL, d.MachineName); err != nil {
 		return errors.Wrap(err, "Error copying ISO to machine dir")
 	}
 
+	log.Info("Creating network...")
 	err := d.createNetwork()
 	if err != nil {
 		return errors.Wrap(err, "creating network")
 	}
 
+	log.Info("Setting up minikube home directory...")
 	if err := os.MkdirAll(d.ResolveStorePath("."), 0755); err != nil {
 		return errors.Wrap(err, "Error making store path directory")
 	}
 
 	for dir := d.ResolveStorePath("."); dir != "/"; dir = filepath.Dir(dir) {
-		log.Debugf("Verifying executable bit set on %s", dir)
 		info, err := os.Stat(dir)
 		if err != nil {
 			return err
@@ -288,18 +292,20 @@ func (d *Driver) Create() error {
 		}
 	}
 
+	log.Info("Building disk image...")
 	err = d.buildDiskImage()
 	if err != nil {
 		return errors.Wrap(err, "Error creating disk")
 	}
 
+	log.Info("Creating domain...")
 	dom, err := d.createDomain()
 	if err != nil {
 		return errors.Wrap(err, "creating domain")
 	}
 	defer dom.Free()
 
-	log.Debug("Finished create, calling Start()")
+	log.Debug("Finished creating machine, now starting machine...")
 	return d.Start()
 }
 
@@ -340,7 +346,7 @@ func (d *Driver) Stop() error {
 }
 
 func (d *Driver) Remove() error {
-	log.Debug("Calling remove...")
+	log.Debug("Removing machine...")
 	conn, err := getConnection()
 	if err != nil {
 		return errors.Wrap(err, "getting connection")
@@ -349,39 +355,19 @@ func (d *Driver) Remove() error {
 
 	//Tear down network and disk if they exist
 	network, _ := conn.LookupNetworkByName(d.NetworkName)
-	log.Debug("Checking if need to delete network")
+	log.Debug("Checking if the network needs to be deleted")
 	if network != nil {
+		log.Infof("Network %s exists, removing...", d.NetworkName)
 		network.Destroy()
 		network.Undefine()
-		log.Debug("Deleted network")
 	}
 
-	log.Debug("Checking if need to delete volume")
-
-	pool, err := conn.LookupStoragePoolByName("default")
-	/*
-		if pool != nil {
-			log.Debug("Pool is not empty")
-			pool.Delete(0)
-			pool.Undefine()
-			pool.Free()
-			log.Debug("Pool deleted")
-		}
-	*/
-
-	vol, _ := pool.LookupStorageVolByName("minikube-pool0-vol0")
-	log.Debug(vol)
-	if vol != nil {
-		vol.Delete(0)
-		vol.Free()
-		log.Debug("Deleted storage volume")
-	}
-
+	log.Debug("Checking if the domain needs to be deleted")
 	dom, err := conn.LookupDomainByName(d.MachineName)
 	if dom != nil {
+		log.Infof("Domain %s exists, removing...", d.MachineName)
 		dom.Destroy()
 		dom.Undefine()
-		log.Debug("Deleted domain")
 	}
 
 	return nil

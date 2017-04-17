@@ -11,16 +11,6 @@ import (
 	"github.com/pkg/errors"
 )
 
-// func (d *Driver) createDiskImage() error {
-// 	diskSize := fmt.Sprintf("%dM", d.DiskSize)
-// 	cmd := exec.Command("qemu-img", "create", "-f", "qcow2", "-o", "preallocation=metadata", d.DiskPath, diskSize)
-// 	output, err := cmd.CombinedOutput()
-// 	if err != nil {
-// 		return errors.Wrapf(err, "creating image using qemu-img: output: %s", output)
-// 	}
-// 	return nil
-// }
-
 func createRawDiskImage(dest string, size int64) error {
 	f, err := os.OpenFile(dest, os.O_CREATE|os.O_EXCL|os.O_WRONLY, 0644)
 	if err != nil {
