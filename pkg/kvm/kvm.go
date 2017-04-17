@@ -74,8 +74,17 @@ func (d *Driver) SetConfigFromFlags(flags drivers.DriverOptions) error {
 	return nil
 }
 
-//Not implemented yet
 func (d *Driver) PreCommandCheck() error {
+	conn, err := getConnection()
+	if err != nil {
+		return errors.Wrap(err, "Error connecting to libvirt socket.  Have you added yourself to the libvirtd group?")
+	}
+	libVersion, err := conn.GetLibVersion()
+	if err != nil {
+		return errors.Wrap(err, "getting libvirt version")
+	}
+	log.Debugf("Using libvirt version %d", libVersion)
+
 	return nil
 }
 
@@ -145,14 +154,7 @@ func (d *Driver) GetIP() (string, error) {
 	if s != state.Running {
 		return "", errors.New("host is not running.")
 	}
-	/*
-	   // TODO(r2d4): figure out how to cache ip address
-	   	if d.IPAddress != "" {
-	   		log.Info("Returning cached IP address")
-	   		return d.IPAddress, nil
-	   	}
-	*/
-	ip, err := d.lookupIPFromDomain()
+	ip, err := d.lookupIP()
 	if err != nil {
 		return "", errors.Wrap(err, "getting IP")
 	}
@@ -339,7 +341,7 @@ func (d *Driver) Stop() error {
 
 func (d *Driver) Remove() error {
 	log.Debug("Calling remove...")
-	conn, err := d.getConnection()
+	conn, err := getConnection()
 	if err != nil {
 		return errors.Wrap(err, "getting connection")
 	}

@@ -7,8 +7,6 @@ import (
 	"strings"
 	"text/template"
 
-	"github.com/docker/machine/libmachine/log"
-
 	libvirt "github.com/libvirt/libvirt-go"
 	"github.com/pkg/errors"
 )
@@ -29,7 +27,7 @@ const networkTmpl = `
 const defaultNetworkName = "minikube-net"
 
 func (d *Driver) createNetwork() error {
-	conn, err := d.getConnection()
+	conn, err := getConnection()
 	if err != nil {
 		return errors.Wrap(err, "getting libvirt connection")
 	}
@@ -65,19 +63,30 @@ func (d *Driver) createNetwork() error {
 	return nil
 }
 
-func (d *Driver) lookupIPFromDomain() (string, error) {
+func (d *Driver) lookupIP() (string, error) {
 	dom, conn, err := d.getDomain()
 	if err != nil {
-		return "", errors.Wrap(err, "getting domain")
+		return "", errors.Wrap(err, "getting connection and domain")
 	}
+
 	defer closeDomain(dom, conn)
 
+	libVersion, err := conn.GetLibVersion()
+	if err != nil {
+		return "", errors.Wrap(err, "getting libversion")
+	}
+
+	// Earlier versions of libvirt don't support getting DHCP address from domains by API
+	if libVersion < 1002006 {
+		return d.lookupIPFromStatusFile()
+	}
+
+	return d.lookupIPFromDomain(dom)
+}
+
+func (d *Driver) lookupIPFromDomain(dom *libvirt.Domain) (string, error) {
 	domIfaces, err := dom.ListAllInterfaceAddresses(0)
 	if err != nil {
-		if isNotSupportedError(err) {
-			log.Infof("ListAllInterfaceAddresses API call not supported in this version: falling back to old API: %v", err)
-			return d.lookupIPLegacy()
-		}
 		return "", errors.Wrap(err, "list all domain interface addresses")
 	}
 	if len(domIfaces) != 2 {
@@ -94,7 +103,7 @@ func (d *Driver) lookupIPFromDomain() (string, error) {
 }
 
 // This is for older versions of libvirt that don't support listAllInterfaceAddresses
-func (d *Driver) lookupIPLegacy() (string, error) {
+func (d *Driver) lookupIPFromStatusFile() (string, error) {
 	leasesFile := fmt.Sprintf("/var/lib/libvirt/dnsmasq/%s.leases", d.NetworkName)
 	leases, err := ioutil.ReadFile(leasesFile)
 	if err != nil {
@@ -116,11 +125,4 @@ func (d *Driver) lookupIPLegacy() (string, error) {
 		}
 	}
 	return ipAddress, nil
-}
-
-func isNotSupportedError(e error) bool {
-	if err, ok := e.(libvirt.Error); ok {
-		return err.Code == libvirt.ERR_NO_SUPPORT
-	}
-	return false
 }

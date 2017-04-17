@@ -55,7 +55,7 @@ const domainTmpl = `
 `
 
 func (d *Driver) getDomain() (*libvirt.Domain, *libvirt.Connect, error) {
-	conn, err := d.getConnection()
+	conn, err := getConnection()
 	if err != nil {
 		return nil, nil, errors.Wrap(err, "getting domain")
 	}
@@ -68,7 +68,7 @@ func (d *Driver) getDomain() (*libvirt.Domain, *libvirt.Connect, error) {
 	return dom, conn, nil
 }
 
-func (d *Driver) getConnection() (*libvirt.Connect, error) {
+func getConnection() (*libvirt.Connect, error) {
 	conn, err := libvirt.NewConnect(qemusystem)
 	if err != nil {
 		return nil, errors.Wrap(err, "Error connecting to libvirt socket")
@@ -93,7 +93,7 @@ func (d *Driver) createDomain() (*libvirt.Domain, error) {
 		return nil, errors.Wrap(err, "executing domain xml")
 	}
 
-	conn, err := d.getConnection()
+	conn, err := getConnection()
 	if err != nil {
 		return nil, errors.Wrap(err, "Error getting libvirt connection")
 	}
