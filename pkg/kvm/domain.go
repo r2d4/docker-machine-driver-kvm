@@ -31,23 +31,25 @@ const domainTmpl = `
       <target dev='hdc' bus='ide'/>
       <readonly/>
     </disk>
-    <disk type='volume' device='disk'>
+    <disk type='file' device='disk'>
       <driver name='qemu' type='raw' cache='{{.CacheMode}}' io='threads' />
-      <source pool='default' volume='minikube-pool0-vol0'/>
+      <source file='{{.DiskPath}}'/>
       <target dev='hda' bus='ide'/>
     </disk>
-    <filesystem type='mount' accessmode='passthrough'>
-      <driver type='path'/>
-      <source dir='{{.HostFolder}}'/>
-      <target dir='/hostdata'/>
-      <readonly/>
-    </filesystem>
     <interface type='network'>
       <source network='default'/>
     </interface>
     <interface type='network'>
       <source network='{{.NetworkName}}'/>
     </interface>
+    <serial type='pty'>
+      <source path='/dev/pts/2'/>
+      <target port='0'/>
+    </serial>
+    <console type='pty' tty='/dev/pts/2'>
+      <source path='/dev/pts/2'/>
+      <target port='0'/>
+    </console>
   </devices>
 </domain>
 `

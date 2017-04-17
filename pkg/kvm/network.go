@@ -3,9 +3,11 @@ package kvm
 import (
 	"bytes"
 	"fmt"
-	"github.com/docker/machine/libmachine/log"
+	"io/ioutil"
+	"strings"
 	"text/template"
-	"time"
+
+	"github.com/docker/machine/libmachine/log"
 
 	libvirt "github.com/libvirt/libvirt-go"
 	"github.com/pkg/errors"
@@ -24,6 +26,8 @@ const networkTmpl = `
 </network>
 `
 
+const defaultNetworkName = "minikube-net"
+
 func (d *Driver) createNetwork() error {
 	conn, err := d.getConnection()
 	if err != nil {
@@ -39,7 +43,7 @@ func (d *Driver) createNetwork() error {
 	}
 
 	//Check if network already exists
-	network, err := conn.LookupNetworkByName(d.NetworkName)
+	network, err := conn.LookupNetworkByName(defaultNetworkName)
 	if err == nil {
 		return nil
 	}
@@ -71,6 +75,7 @@ func (d *Driver) lookupIPFromDomain() (string, error) {
 	domIfaces, err := dom.ListAllInterfaceAddresses(0)
 	if err != nil {
 		if isNotSupportedError(err) {
+			log.Infof("ListAllInterfaceAddresses API call not supported in this version: falling back to old API: %v", err)
 			return d.lookupIPLegacy()
 		}
 		return "", errors.Wrap(err, "list all domain interface addresses")
@@ -90,36 +95,27 @@ func (d *Driver) lookupIPFromDomain() (string, error) {
 
 // This is for older versions of libvirt that don't support listAllInterfaceAddresses
 func (d *Driver) lookupIPLegacy() (string, error) {
-	dom, conn, err := d.getDomain()
+	leasesFile := fmt.Sprintf("/var/lib/libvirt/dnsmasq/%s.leases", d.NetworkName)
+	leases, err := ioutil.ReadFile(leasesFile)
 	if err != nil {
-		return "", errors.Wrapf(err, "getting domain")
+		return "", errors.Wrap(err, "reading leases file")
 	}
-	defer closeDomain(dom, conn)
-
-	net, err := conn.LookupNetworkByName(d.NetworkName)
-	if err != nil {
-		return "", errors.Wrapf(err, "getting network %s", d.NetworkName)
-	}
-	defer net.Free()
-
-	leases, err := net.GetDHCPLeases()
-	if err != nil {
-		return "", errors.Wrapf(err, "Error getting DHCP leases from Network %s", d.NetworkName)
-	}
-
-	ip := ""
-	expiryTime := time.Now()
-	for _, lease := range leases {
-		log.Debugf("Network: %s, Hostname: %s, IP: %s, Expires: %s", d.NetworkName, lease.Hostname, lease.IPaddr, lease.ExpiryTime.Format(time.RFC3339))
-		//TODO(r2d4): This won't work if if the machine name doesn't
-		// match the hostname of the VM
-		if lease.Hostname == d.MachineName && lease.ExpiryTime.After(expiryTime) {
-			ip = lease.IPaddr
-			expiryTime = lease.ExpiryTime
+	ipAddress := ""
+	for _, lease := range strings.Split(string(leases), "\n") {
+		if len(lease) == 0 {
+			continue
+		}
+		// format for lease entry
+		// ExpiryTime MAC IP Hostname ExtendedMAC
+		entry := strings.Split(lease, " ")
+		if len(entry) != 5 {
+			return "", fmt.Errorf("Malformed leases entry: %s", entry)
+		}
+		if entry[3] == d.MachineName {
+			ipAddress = entry[2]
 		}
 	}
-
-	return ip, nil
+	return ipAddress, nil
 }
 
 func isNotSupportedError(e error) bool {

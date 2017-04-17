@@ -23,14 +23,12 @@ import (
 )
 
 const (
-	defaultIsoURL      = ""
-	defaultCPU         = 1
-	defaultDiskSize    = 20000
-	defaultMemory      = 2048
-	qemusystem         = "qemu:///system"
-	defaultNetworkName = "minikube-net"
-	defaultCacheMode   = "threads"
-	diskPath           = "/var/lib/libvirt/images"
+	defaultIsoURL    = "https://storage.googleapis.com/minikube/iso/minikube-v0.18.0.iso"
+	defaultCPU       = 1
+	defaultDiskSize  = 20000
+	defaultMemory    = 2048
+	qemusystem       = "qemu:///system"
+	defaultCacheMode = "threads"
 )
 
 var defaultHostFolder = os.Getenv("HOME")
@@ -48,7 +46,6 @@ type Driver struct {
 	DiskPath    string
 	ISO         string
 	CacheMode   string
-	HostFolder  string
 }
 
 func NewDriver(hostName, storePath string) *Driver {
@@ -64,7 +61,6 @@ func NewDriver(hostName, storePath string) *Driver {
 		NetworkName: defaultNetworkName,
 		DiskPath:    storePath,
 		CacheMode:   defaultCacheMode,
-		HostFolder:  defaultHostFolder,
 	}
 }
 
@@ -216,12 +212,14 @@ func (d *Driver) Restart() error {
 }
 
 func (d *Driver) Start() error {
+	log.Debug("Getting domain xml...")
 	dom, conn, err := d.getDomain()
 	if err != nil {
 		return errors.Wrap(err, "getting connection")
 	}
 	defer closeDomain(dom, conn)
 
+	log.Debug("Creating domain...")
 	if err := dom.Create(); err != nil {
 		return errors.Wrap(err, "Error creating VM")
 	}
@@ -232,6 +230,7 @@ func (d *Driver) Start() error {
 		if err != nil || ip == "" {
 			if err != nil {
 				d.IPAddress = ""
+				log.Debug(err)
 			}
 			log.Debugf("Waiting for machine to come up %d/%d", i, 40)
 			time.Sleep(3 * time.Second)
@@ -287,7 +286,7 @@ func (d *Driver) Create() error {
 		}
 	}
 
-	err = d.createDisk()
+	err = d.buildDiskImage()
 	if err != nil {
 		return errors.Wrap(err, "Error creating disk")
 	}

@@ -5,131 +5,11 @@ import (
 	"bytes"
 	"fmt"
 	"io/ioutil"
-	"text/template"
+	"os"
 
 	"github.com/docker/machine/libmachine/ssh"
-	libvirt "github.com/libvirt/libvirt-go"
 	"github.com/pkg/errors"
 )
-
-const volumeTmpl = `
-<volume>
-  <name>{{.MachineName}}-pool0-vol0</name>
-  <allocation>0</allocation>
-  <capacity unit="MB">{{.DiskSize}}</capacity>
-  <format type="raw"/>
-  <target>
-    <path>{{.DiskPath}}</path>
-    <permissions>
-      <owner>107</owner>
-      <group>107</group>
-      <mode>0744</mode>
-      <label>virt_image_t</label>
-    </permissions>
-  </target>
-</volume>
-`
-
-const poolTmpl = `
-<pool type="dir">
-  <name>minikube-pool0</name>
-  <target>
-    <path>/var/lib/libvirt/images</path>
-  </target>
-</pool>
-`
-
-func (d *Driver) createDisk() error {
-
-	// Parse the template
-	tmpl := template.Must(template.New("volume").Parse(volumeTmpl))
-	var volumeXml bytes.Buffer
-	err := tmpl.Execute(&volumeXml, d)
-	if err != nil {
-		return errors.Wrap(err, "executing volume template")
-	}
-	/*
-		tmpl = template.Must(template.New("pool").Parse(poolTmpl))
-		var poolXml bytes.Buffer
-		err = tmpl.Execute(&poolXml, d)
-		if err != nil {
-			return errors.Wrap(err, "executing storage template")
-		}
-	*/
-	// Connect to the libvirt socket
-	conn, err := libvirt.NewConnect(qemusystem)
-	if err != nil {
-		return errors.Wrap(err, "connecting to libvirt socket")
-	}
-	defer func() {
-		if res, _ := conn.CloseConnection(); res != 0 {
-			fmt.Errorf("CloseConnection() == %d, expected 0", res)
-		}
-	}()
-	/*
-		// Create the storage pool and volume
-		pool, err := conn.StoragePoolDefineXML(poolXml.String(), 0)
-		if err != nil {
-			return errors.Wrapf(err, "defining storage pool: %s", poolXml.String())
-		}
-		defer pool.Free()
-
-		if err = pool.Create(0); err != nil {
-			return errors.Wrap(err, "creating storage pool")
-		}
-	*/
-	pool, err := conn.LookupStoragePoolByName("default")
-	if err != nil {
-		return errors.Wrap(err, "looking up default storage pool")
-	}
-
-	vol, err := pool.StorageVolCreateXML(volumeXml.String(), 0)
-	if err != nil {
-		return errors.Wrapf(err, "defining volume xml: %s", volumeXml.String())
-	}
-	defer vol.Free()
-
-	p, err := d.generateCertBundle()
-	if err != nil {
-		return errors.Wrap(err, "generating cert bundle")
-	}
-	data := p.Bytes()
-
-	// Write cert bundle and magic string to newly created volume
-	stream, err := conn.NewStream(0)
-	if err != nil {
-		return errors.Wrap(err, "creating stream for volume")
-	}
-	defer func() {
-		stream.Free()
-	}()
-
-	// Set the volume up to upload from stream
-	if err := vol.Upload(stream, 0, uint64(len(data)), 0); err != nil {
-		stream.Abort()
-		return errors.Wrap(err, "uploading stream")
-	}
-
-	// Do the actual writing
-	if n, err := stream.Send(data); err != nil || n != len(data) {
-		return errors.Wrapf(err, "sending data, wrote %d bytes, expected %d bytes", n, len(data))
-	}
-
-	buf := make([]byte, 1e7)
-
-	_, err = stream.Send(buf)
-	if err != nil {
-		return errors.Wrap(err, "sending sparse file to stream")
-	}
-
-	stream.Finish()
-	/*
-		if err := stream.Finish(); err != nil {
-			return errors.Wrap(err, "finishing stream")
-		}
-	*/
-	return nil
-}
 
 // func (d *Driver) createDiskImage() error {
 // 	diskSize := fmt.Sprintf("%dM", d.DiskSize)
@@ -140,6 +20,48 @@ func (d *Driver) createDisk() error {
 // 	}
 // 	return nil
 // }
+
+func createRawDiskImage(dest string, size int64) error {
+	f, err := os.OpenFile(dest, os.O_CREATE|os.O_EXCL|os.O_WRONLY, 0644)
+	if err != nil {
+		if os.IsExist(err) {
+			return nil
+		}
+		return errors.Wrap(err, "opening file for raw disk image")
+	}
+	f.Close()
+
+	if err := os.Truncate(dest, size<<20); err != nil {
+		return errors.Wrap(err, "writing sparse file")
+	}
+
+	return nil
+}
+
+func (d *Driver) buildDiskImage() error {
+	diskPath := d.ResolveStorePath(fmt.Sprintf("%s.img", d.MachineName))
+	err := createRawDiskImage(diskPath, d.DiskSize)
+	if err := createRawDiskImage(diskPath, d.DiskSize); err != nil {
+		return errors.Wrap(err, "creating raw disk image")
+	}
+	tarBuf, err := d.generateCertBundle()
+	if err != nil {
+		return errors.Wrap(err, "generating cert bundle")
+	}
+	f, err := os.OpenFile(d.DiskPath, os.O_WRONLY, 0644)
+	if err != nil {
+		return errors.Wrap(err, "opening raw disk image to write cert bundle")
+	}
+	defer f.Close()
+
+	f.Seek(0, os.SEEK_SET)
+	_, err = f.Write(tarBuf.Bytes())
+	if err != nil {
+		return errors.Wrap(err, "wrting cert bundle to disk image")
+	}
+
+	return nil
+}
 
 func (d *Driver) generateCertBundle() (*bytes.Buffer, error) {
 	magicString := "boot2docker, please format-me"
