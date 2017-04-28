@@ -55,29 +55,35 @@ all-container: $(addprefix container-, $(ALL_ARCH))
 
 all-push: $(addprefix push-, $(ALL_ARCH))
 
-build: bin/$(ARCH)/$(BIN)
+build: bin/$(BIN)
 
 build-container: Dockerfile.build 
 	@docker build -t $(BUILD_IMAGE) -f Dockerfile.build .
 
-bin/$(ARCH)/$(BIN): build-dirs build-container
+bin/docker/$(BIN): build-dirs build-container
 	@echo "building: $@"
 	@docker run                                                            \
 	    -ti                                                                \
 	    -u $$(id -u):$$(id -g)                                             \
 	    -v $$(pwd)/.go:/go                                                 \
 	    -v $$(pwd):/go/src/$(PKG)                                          \
-	    -v $$(pwd)/bin/$(ARCH):/go/bin                                     \
-	    -v $$(pwd)/bin/$(ARCH):/go/bin/linux_$(ARCH)                       \
-	    -v $$(pwd)/.go/std/$(ARCH):/usr/local/go/pkg/linux_$(ARCH)_static  \
+	    -v $$(pwd)/bin:/go/bin                      	               \
+	    -v $$(pwd)/bin:/go/bin/linux		                       \
+	    -v $$(pwd)/.go/std:/usr/local/go/pkg/linux_static		       \
 	    -w /go/src/$(PKG)                                                  \
 	    $(BUILD_IMAGE)                                                     \
 	    /bin/sh -c "                                                       \
-	        ARCH=$(ARCH)                                                   \
 	        VERSION=$(VERSION)                                             \
 	        PKG=$(PKG)                                                     \
 	        ./build/build.sh                                               \
 	    "
+
+bin/$(BIN): build-dirs
+	/bin/sh -c "				\
+		VERSION=$(VERSION)		\
+		PKG=$(PKG)			\
+		./build/build.sh		\
+	"
 
 DOTFILE_IMAGE = $(subst /,_,$(IMAGE))-$(VERSION)
 
