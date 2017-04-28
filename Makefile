@@ -79,11 +79,7 @@ bin/docker/$(BIN): build-dirs build-container
 	    "
 
 bin/$(BIN): build-dirs
-	/bin/sh -c "				\
-		VERSION=$(VERSION)		\
-		PKG=$(PKG)			\
-		./build/build.sh		\
-	"
+	VERSION=$(VERSION) PKG=$(PKG) ./build/build.sh
 
 DOTFILE_IMAGE = $(subst /,_,$(IMAGE))-$(VERSION)
 
