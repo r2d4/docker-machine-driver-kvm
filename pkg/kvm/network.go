@@ -99,7 +99,8 @@ func (d *Driver) lookupIPFromDomain(dom *libvirt.Domain) (string, error) {
 		}
 	}
 
-	return "", errors.New("Could not find IP in Domain Interfaces")
+	// No IP has been allocated yet
+	return "", nil
 }
 
 // This is for older versions of libvirt that don't support listAllInterfaceAddresses
