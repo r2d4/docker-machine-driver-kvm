@@ -268,12 +268,6 @@ func (d *Driver) Create() error {
 		return errors.Wrap(err, "Error copying ISO to machine dir")
 	}
 
-	log.Info("Creating network...")
-	err := d.createNetwork()
-	if err != nil {
-		return errors.Wrap(err, "creating network")
-	}
-
 	log.Info("Setting up minikube home directory...")
 	if err := os.MkdirAll(d.ResolveStorePath("."), 0755); err != nil {
 		return errors.Wrap(err, "Error making store path directory")
@@ -293,7 +287,7 @@ func (d *Driver) Create() error {
 	}
 
 	log.Info("Building disk image...")
-	err = d.buildDiskImage()
+	err := d.buildDiskImage()
 	if err != nil {
 		return errors.Wrap(err, "Error creating disk")
 	}
@@ -304,6 +298,12 @@ func (d *Driver) Create() error {
 		return errors.Wrap(err, "creating domain")
 	}
 	defer dom.Free()
+
+	log.Info("Creating network...")
+	err = d.createNetwork()
+	if err != nil {
+		return errors.Wrap(err, "creating network")
+	}
 
 	log.Debug("Finished creating machine, now starting machine...")
 	return d.Start()
