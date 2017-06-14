@@ -7,7 +7,6 @@ import (
 	"strings"
 	"text/template"
 
-	libvirt "github.com/libvirt/libvirt-go"
 	"github.com/pkg/errors"
 )
 
@@ -71,36 +70,7 @@ func (d *Driver) lookupIP() (string, error) {
 
 	defer closeDomain(dom, conn)
 
-	libVersion, err := conn.GetLibVersion()
-	if err != nil {
-		return "", errors.Wrap(err, "getting libversion")
-	}
-
-	// Earlier versions of libvirt don't support getting DHCP address from domains by API
-	if libVersion < 1002006 {
-		return d.lookupIPFromStatusFile()
-	}
-
-	return d.lookupIPFromDomain(dom)
-}
-
-func (d *Driver) lookupIPFromDomain(dom *libvirt.Domain) (string, error) {
-	domIfaces, err := dom.ListAllInterfaceAddresses(0)
-	if err != nil {
-		return "", errors.Wrap(err, "list all domain interface addresses")
-	}
-	if len(domIfaces) != 2 {
-		return "", fmt.Errorf("Domain has wrong number of interfaces, got %d, expected 2", len(domIfaces))
-	}
-
-	for _, domIface := range domIfaces {
-		if domIface.Name == d.NetworkName {
-			return domIface.Addrs[0].Addr, nil
-		}
-	}
-
-	// No IP has been allocated yet
-	return "", nil
+	return d.lookupIPFromStatusFile()
 }
 
 // This is for older versions of libvirt that don't support listAllInterfaceAddresses
