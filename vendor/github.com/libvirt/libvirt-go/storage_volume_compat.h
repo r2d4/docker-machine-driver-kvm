@@ -27,6 +27,21 @@
 #ifndef LIBVIRT_GO_STORAGE_VOLUME_COMPAT_H__
 #define LIBVIRT_GO_STORAGE_VOLUME_COMPAT_H__
 
+/* 3.0.0 */
+
+int virStorageVolGetInfoFlagsCompat(virStorageVolPtr vol,
+				    virStorageVolInfoPtr info,
+				    unsigned int flags);
+
+#ifndef VIR_STORAGE_VOL_USE_ALLOCATION
+#define VIR_STORAGE_VOL_USE_ALLOCATION 0
+#endif
+
+#ifndef VIR_STORAGE_VOL_GET_PHYSICAL
+#define VIR_STORAGE_VOL_GET_PHYSICAL 1 << 0
+#endif
+
+
 /* 1.2.13 */
 
 #ifndef VIR_STORAGE_VOL_CREATE_REFLINK
@@ -52,6 +67,16 @@
 
 #ifndef VIR_STORAGE_VOL_PLOOP
 #define VIR_STORAGE_VOL_PLOOP 5
+#endif
+
+/* 3.4.0 */
+
+#ifndef VIR_STORAGE_VOL_UPLOAD_SPARSE_STREAM
+#define VIR_STORAGE_VOL_UPLOAD_SPARSE_STREAM (1 << 0)
+#endif
+
+#ifndef VIR_STORAGE_VOL_DOWNLOAD_SPARSE_STREAM
+#define VIR_STORAGE_VOL_DOWNLOAD_SPARSE_STREAM (1 << 0)
 #endif
 
 #endif /* LIBVIRT_GO_STORAGE_VOLUME_COMPAT_H__ */

@@ -24,17 +24,26 @@
  *
  */
 
-#ifndef LIBVIRT_GO_STORAGE_POOL_EVENTS_CFUNCS_H__
-#define LIBVIRT_GO_STORAGE_POOL_EVENTS_CFUNCS_H__
+#ifndef LIBVIRT_GO_STREAM_COMPAT_H__
+#define LIBVIRT_GO_STREAM_COMPAT_H__
 
-void storagePoolEventLifecycleCallback_cgo(virConnectPtr c, virStoragePoolPtr d,
-					   int event, int detail, void* data);
-void storagePoolEventGenericCallback_cgo(virConnectPtr c, virStoragePoolPtr d,
-					 void* data);
+/* 3.4.0 */
 
-int virConnectStoragePoolEventRegisterAny_cgo(virConnectPtr c,  virStoragePoolPtr d,
-					      int eventID, virConnectStoragePoolEventGenericCallback cb,
-					      long goCallbackId);
+#ifndef VIR_STREAM_RECV_STOP_AT_HOLE
+#define VIR_STREAM_RECV_STOP_AT_HOLE (1 << 0)
+#endif
 
+int virStreamRecvFlagsCompat(virStreamPtr st,
+			     char *data,
+			     size_t nbytes,
+			     unsigned int flags);
 
-#endif /* LIBVIRT_GO_STORAGE_POOL_EVENTS_CFUNCS_H__ */
+int virStreamSendHoleCompat(virStreamPtr st,
+			    long long length,
+			    unsigned int flags);
+
+int virStreamRecvHoleCompat(virStreamPtr,
+			    long long *length,
+			    unsigned int flags);
+
+#endif /* LIBVIRT_GO_STREAM_COMPAT_H__ */

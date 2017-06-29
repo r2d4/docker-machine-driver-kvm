@@ -103,6 +103,18 @@ void domainEventDeviceRemovalFailedCallback_cgo(virConnectPtr conn,
 						virDomainPtr dom,
 						const char *devAlias,
 						void *opaque);
+void domainEventMetadataChangeCallback_cgo(virConnectPtr conn,
+					   virDomainPtr dom,
+					   int type,
+					   const char *nsuri,
+					   void *opaque);
+void domainEventBlockThresholdCallback_cgo(virConnectPtr conn,
+					   virDomainPtr dom,
+					   const char *dev,
+					   const char *path,
+					   unsigned long long threshold,
+					   unsigned long long excess,
+					   void *opaque);
 
 int virConnectDomainEventRegisterAny_cgo(virConnectPtr c,  virDomainPtr d,
                                          int eventID, virConnectDomainEventGenericCallback cb,

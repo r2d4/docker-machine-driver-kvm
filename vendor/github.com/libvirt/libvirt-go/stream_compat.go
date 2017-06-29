@@ -19,22 +19,51 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  *
- * Copyright (c) 2013 Alex Zorin
- * Copyright (C) 2016 Red Hat, Inc.
+ * Copyright (C) 2017 Red Hat, Inc.
  *
  */
 
-#ifndef LIBVIRT_GO_STORAGE_POOL_EVENTS_CFUNCS_H__
-#define LIBVIRT_GO_STORAGE_POOL_EVENTS_CFUNCS_H__
+package libvirt
 
-void storagePoolEventLifecycleCallback_cgo(virConnectPtr c, virStoragePoolPtr d,
-					   int event, int detail, void* data);
-void storagePoolEventGenericCallback_cgo(virConnectPtr c, virStoragePoolPtr d,
-					 void* data);
+/*
+#cgo pkg-config: libvirt
+#include <libvirt/libvirt.h>
+#include <assert.h>
+#include "stream_compat.h"
 
-int virConnectStoragePoolEventRegisterAny_cgo(virConnectPtr c,  virStoragePoolPtr d,
-					      int eventID, virConnectStoragePoolEventGenericCallback cb,
-					      long goCallbackId);
+int virStreamRecvFlagsCompat(virStreamPtr st,
+			     char *data,
+			     size_t nbytes,
+			     unsigned int flags)
+{
+#if LIBVIR_VERSION_NUMBER < 3004000
+    assert(0); // Caller should have checked version
+#else
+    return virStreamRecvFlags(st, data, nbytes, flags);
+#endif
+}
 
+int virStreamSendHoleCompat(virStreamPtr st,
+			    long long length,
+			    unsigned int flags)
+{
+#if LIBVIR_VERSION_NUMBER < 3004000
+    assert(0); // Caller should have checked version
+#else
+    return virStreamSendHole(st, length, flags);
+#endif
+}
 
-#endif /* LIBVIRT_GO_STORAGE_POOL_EVENTS_CFUNCS_H__ */
+int virStreamRecvHoleCompat(virStreamPtr st,
+			    long long *length,
+			    unsigned int flags)
+{
+#if LIBVIR_VERSION_NUMBER < 3004000
+    assert(0); // Caller should have checked version
+#else
+    return virStreamRecvHole(st, length, flags);
+#endif
+}
+
+*/
+import "C"

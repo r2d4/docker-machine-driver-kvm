@@ -200,6 +200,10 @@ func typedParamsPack(cparams []C.virTypedParameter, infomap map[string]typedPara
 func typedParamsPackNew(infomap map[string]typedParamsFieldInfo) (*[]C.virTypedParameter, error) {
 	nparams := 0
 	for _, value := range infomap {
+		if !*value.set {
+			continue
+		}
+
 		if value.sl != nil {
 			nparams += len(*value.sl)
 		} else {
@@ -210,6 +214,10 @@ func typedParamsPackNew(infomap map[string]typedParamsFieldInfo) (*[]C.virTypedP
 	cparams := make([]C.virTypedParameter, nparams)
 	nparams = 0
 	for key, value := range infomap {
+		if !*value.set {
+			continue
+		}
+
 		cfield := C.CString(key)
 		defer C.free(unsafe.Pointer(cfield))
 		clen := len(key) + 1
@@ -219,11 +227,27 @@ func typedParamsPackNew(infomap map[string]typedParamsFieldInfo) (*[]C.virTypedP
 		if value.sl != nil {
 			for i := 0; i < len(*value.sl); i++ {
 				cparam := &cparams[nparams]
+				cparam._type = C.VIR_TYPED_PARAM_STRING
 				C.memcpy(unsafe.Pointer(&cparam.field[0]), unsafe.Pointer(cfield), C.size_t(clen))
 				nparams++
 			}
 		} else {
 			cparam := &cparams[nparams]
+			if value.i != nil {
+				cparam._type = C.VIR_TYPED_PARAM_INT
+			} else if value.ui != nil {
+				cparam._type = C.VIR_TYPED_PARAM_UINT
+			} else if value.l != nil {
+				cparam._type = C.VIR_TYPED_PARAM_LLONG
+			} else if value.ul != nil {
+				cparam._type = C.VIR_TYPED_PARAM_ULLONG
+			} else if value.b != nil {
+				cparam._type = C.VIR_TYPED_PARAM_BOOLEAN
+			} else if value.d != nil {
+				cparam._type = C.VIR_TYPED_PARAM_DOUBLE
+			} else if value.s != nil {
+				cparam._type = C.VIR_TYPED_PARAM_STRING
+			}
 			C.memcpy(unsafe.Pointer(&cparam.field[0]), unsafe.Pointer(cfield), C.size_t(clen))
 			nparams++
 		}

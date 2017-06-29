@@ -24,17 +24,37 @@
  *
  */
 
-#ifndef LIBVIRT_GO_STORAGE_POOL_EVENTS_CFUNCS_H__
-#define LIBVIRT_GO_STORAGE_POOL_EVENTS_CFUNCS_H__
+#ifndef LIBVIRT_GO_QEMU_COMPAT_H__
+#define LIBVIRT_GO_QEMU_COMPAT_H__
 
-void storagePoolEventLifecycleCallback_cgo(virConnectPtr c, virStoragePoolPtr d,
-					   int event, int detail, void* data);
-void storagePoolEventGenericCallback_cgo(virConnectPtr c, virStoragePoolPtr d,
-					 void* data);
+/* 1.2.3 */
 
-int virConnectStoragePoolEventRegisterAny_cgo(virConnectPtr c,  virStoragePoolPtr d,
-					      int eventID, virConnectStoragePoolEventGenericCallback cb,
-					      long goCallbackId);
+#if LIBVIR_VERSION_NUMBER < 1002003
+typedef void (*virConnectDomainQemuMonitorEventCallback)(virConnectPtr conn,
+                                                         virDomainPtr dom,
+                                                         const char *event,
+                                                         long long seconds,
+                                                         unsigned int micros,
+                                                         const char *details,
+                                                         void *opaque);
+#endif
+
+int virConnectDomainQemuMonitorEventDeregisterCompat(virConnectPtr conn,
+						     int callbackID);
+
+#ifndef VIR_CONNECT_DOMAIN_QEMU_MONITOR_EVENT_REGISTER_REGEX
+#define VIR_CONNECT_DOMAIN_QEMU_MONITOR_EVENT_REGISTER_REGEX (1 << 0)
+#endif
+
+#ifndef VIR_CONNECT_DOMAIN_QEMU_MONITOR_EVENT_REGISTER_NOCASE
+#define VIR_CONNECT_DOMAIN_QEMU_MONITOR_EVENT_REGISTER_NOCASE (1 << 1)
+#endif
+
+/* 1.2.15 */
+
+#ifndef VIR_DOMAIN_QEMU_AGENT_COMMAND_SHUTDOWN
+#define VIR_DOMAIN_QEMU_AGENT_COMMAND_SHUTDOWN 60
+#endif
 
 
-#endif /* LIBVIRT_GO_STORAGE_POOL_EVENTS_CFUNCS_H__ */
+#endif /* LIBVIRT_GO_QEMU_COMPAT_H__ */

@@ -1,4 +1,4 @@
-/*
+ /*
  * This file is part of the libvirt-go project
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -24,17 +24,16 @@
  *
  */
 
-#ifndef LIBVIRT_GO_STORAGE_POOL_EVENTS_CFUNCS_H__
-#define LIBVIRT_GO_STORAGE_POOL_EVENTS_CFUNCS_H__
+#ifndef LIBVIRT_GO_DOMAIN_EVENTS_CFUNCS_H__
+#define LIBVIRT_GO_DOMAIN_EVENTS_CFUNCS_H__
 
-void storagePoolEventLifecycleCallback_cgo(virConnectPtr c, virStoragePoolPtr d,
-					   int event, int detail, void* data);
-void storagePoolEventGenericCallback_cgo(virConnectPtr c, virStoragePoolPtr d,
-					 void* data);
+void domainQemuMonitorEventCallback_cgo(virConnectPtr c, virDomainPtr d,
+					const char *event, long long secs,
+					unsigned int micros, const char *details, void *data);
 
-int virConnectStoragePoolEventRegisterAny_cgo(virConnectPtr c,  virStoragePoolPtr d,
-					      int eventID, virConnectStoragePoolEventGenericCallback cb,
-					      long goCallbackId);
+int virConnectDomainQemuMonitorEventRegister_cgo(virConnectPtr c,  virDomainPtr d,
+						 const char *event, virConnectDomainQemuMonitorEventCallback cb,
+						 long goCallbackId, unsigned int flags);
 
 
-#endif /* LIBVIRT_GO_STORAGE_POOL_EVENTS_CFUNCS_H__ */
+#endif /* LIBVIRT_GO_DOMAIN_EVENTS_CFUNCS_H__ */

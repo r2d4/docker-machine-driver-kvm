@@ -112,6 +112,7 @@ const (
 	CONNECT_LIST_STORAGE_POOLS_SHEEPDOG     = ConnectListAllStoragePoolsFlags(C.VIR_CONNECT_LIST_STORAGE_POOLS_SHEEPDOG)
 	CONNECT_LIST_STORAGE_POOLS_GLUSTER      = ConnectListAllStoragePoolsFlags(C.VIR_CONNECT_LIST_STORAGE_POOLS_GLUSTER)
 	CONNECT_LIST_STORAGE_POOLS_ZFS          = ConnectListAllStoragePoolsFlags(C.VIR_CONNECT_LIST_STORAGE_POOLS_ZFS)
+	CONNECT_LIST_STORAGE_POOLS_VSTORAGE     = ConnectListAllStoragePoolsFlags(C.VIR_CONNECT_LIST_STORAGE_POOLS_VSTORAGE)
 )
 
 type ConnectBaselineCPUFlags int
@@ -149,6 +150,10 @@ const (
 	CONNECT_LIST_NODE_DEVICES_CAP_FC_HOST       = ConnectListAllNodeDeviceFlags(C.VIR_CONNECT_LIST_NODE_DEVICES_CAP_FC_HOST)
 	CONNECT_LIST_NODE_DEVICES_CAP_VPORTS        = ConnectListAllNodeDeviceFlags(C.VIR_CONNECT_LIST_NODE_DEVICES_CAP_VPORTS)
 	CONNECT_LIST_NODE_DEVICES_CAP_SCSI_GENERIC  = ConnectListAllNodeDeviceFlags(C.VIR_CONNECT_LIST_NODE_DEVICES_CAP_SCSI_GENERIC)
+	CONNECT_LIST_NODE_DEVICES_CAP_DRM           = ConnectListAllNodeDeviceFlags(C.VIR_CONNECT_LIST_NODE_DEVICES_CAP_DRM)
+	CONNECT_LIST_NODE_DEVICES_CAP_MDEV          = ConnectListAllNodeDeviceFlags(C.VIR_CONNECT_LIST_NODE_DEVICES_CAP_MDEV)
+	CONNECT_LIST_NODE_DEVICES_CAP_MDEV_TYPES    = ConnectListAllNodeDeviceFlags(C.VIR_CONNECT_LIST_NODE_DEVICES_CAP_MDEV_TYPES)
+	CONNECT_LIST_NODE_DEVICES_CAP_CCW_DEV       = ConnectListAllNodeDeviceFlags(C.VIR_CONNECT_LIST_NODE_DEVICES_CAP_CCW_DEV)
 )
 
 type ConnectListAllSecretsFlags int
@@ -410,7 +415,7 @@ func NewConnectReadOnly(uri string) (*Connect, error) {
 	return &Connect{ptr: ptr}, nil
 }
 
-func (c *Connect) CloseConnection() (int, error) {
+func (c *Connect) Close() (int, error) {
 	result := int(C.virConnectClose(c.ptr))
 	if result == -1 {
 		return result, GetLastError()
@@ -418,11 +423,20 @@ func (c *Connect) CloseConnection() (int, error) {
 	if result == 0 {
 		// No more reference to this connection, release data.
 		releaseConnectionData(c)
+		c.ptr = nil
 	}
 	return result, nil
 }
 
-type CloseCallback func(conn Connect, reason ConnectCloseReason)
+func (c *Connect) Ref() error {
+	ret := C.virConnectRef(c.ptr)
+	if ret == -1 {
+		return GetLastError()
+	}
+	return nil
+}
+
+type CloseCallback func(conn *Connect, reason ConnectCloseReason)
 
 // Register a close callback for the given destination. Only one
 // callback per connection is allowed. Setting a callback will remove
@@ -462,7 +476,7 @@ func closeCallback(conn C.virConnectPtr, reason ConnectCloseReason, goCallbackId
 	if !ok {
 		panic("Inappropriate callback type called")
 	}
-	callback(Connect{ptr: conn}, reason)
+	callback(&Connect{ptr: conn}, reason)
 }
 
 func (c *Connect) GetCapabilities() (string, error) {
@@ -782,7 +796,7 @@ func (c *Connect) DomainDefineXML(xmlConfig string) (*Domain, error) {
 
 func (c *Connect) DomainDefineXMLFlags(xmlConfig string, flags DomainDefineFlags) (*Domain, error) {
 	if C.LIBVIR_VERSION_NUMBER < 1002012 {
-		return nil, GetNotImplementedError()
+		return nil, GetNotImplementedError("virDomainDefineXMLFlags")
 	}
 	cXml := C.CString(string(xmlConfig))
 	defer C.free(unsafe.Pointer(cXml))
@@ -1435,7 +1449,7 @@ func (c *Connect) InterfaceChangeRollback(flags uint32) error {
 
 func (c *Connect) AllocPages(pageSizes map[int]int64, startCell int, cellCount uint, flags NodeAllocPagesFlags) (int, error) {
 	if C.LIBVIR_VERSION_NUMBER < 1002009 {
-		return 0, GetNotImplementedError()
+		return 0, GetNotImplementedError("virNodeAllocPages")
 	}
 	cpages := make([]C.uint, len(pageSizes))
 	ccounts := make([]C.ulonglong, len(pageSizes))
@@ -1502,7 +1516,7 @@ func (c *Connect) GetCPUStats(cpuNum int, flags uint32) (*NodeCPUStats, error) {
 	}
 
 	params := make([]C.virNodeCPUStats, nparams)
-	ret = C.virNodeGetCPUStats(c.ptr, C.int(cpuNum), (*C.virNodeCPUStats)(unsafe.Pointer(&params)), &nparams, C.uint(flags))
+	ret = C.virNodeGetCPUStats(c.ptr, C.int(cpuNum), (*C.virNodeCPUStats)(unsafe.Pointer(&params[0])), &nparams, C.uint(flags))
 	if ret == -1 {
 		return nil, GetLastError()
 	}
@@ -1562,7 +1576,7 @@ func (c *Connect) GetFreeMemory() (uint64, error) {
 
 func (c *Connect) GetFreePages(pageSizes []uint64, startCell int, maxCells uint, flags uint32) ([]uint64, error) {
 	if C.LIBVIR_VERSION_NUMBER < 1002006 {
-		return []uint64{}, GetNotImplementedError()
+		return []uint64{}, GetNotImplementedError("virNodeGetFreePages")
 	}
 	cpageSizes := make([]C.uint, len(pageSizes))
 	ccounts := make([]C.ulonglong, len(pageSizes)*int(maxCells))
@@ -1688,7 +1702,7 @@ func (c *Connect) GetMemoryStats(cellNum int, flags uint32) (*NodeMemoryStats, e
 	}
 
 	params := make([]C.virNodeMemoryStats, nparams)
-	ret = C.virNodeGetMemoryStats(c.ptr, C.int(cellNum), (*C.virNodeMemoryStats)(unsafe.Pointer(&params)), &nparams, C.uint(flags))
+	ret = C.virNodeGetMemoryStats(c.ptr, C.int(cellNum), (*C.virNodeMemoryStats)(unsafe.Pointer(&params[0])), &nparams, C.uint(flags))
 	if ret == -1 {
 		return nil, GetLastError()
 	}
@@ -1885,7 +1899,7 @@ func (c *Connect) GetCPUModelNames(arch string, flags uint32) ([]string, error) 
 
 func (c *Connect) GetDomainCapabilities(emulatorbin string, arch string, machine string, virttype string, flags uint32) (string, error) {
 	if C.LIBVIR_VERSION_NUMBER < 1002007 {
-		return "", GetNotImplementedError()
+		return "", GetNotImplementedError("virConnectGetDomainCapabilities")
 	}
 	var cemulatorbin *C.char
 	if emulatorbin != "" {
@@ -2253,6 +2267,24 @@ type DomainStatsPerf struct {
 	StalledCyclesBackend     uint64
 	RefCpuCyclesSet          bool
 	RefCpuCycles             uint64
+	CpuClockSet              bool
+	CpuClock                 uint64
+	TaskClockSet             bool
+	TaskClock                uint64
+	PageFaultsSet            bool
+	PageFaults               uint64
+	ContextSwitchesSet       bool
+	ContextSwitches          uint64
+	CpuMigrationsSet         bool
+	CpuMigrations            uint64
+	PageFaultsMinSet         bool
+	PageFaultsMin            uint64
+	PageFaultsMajSet         bool
+	PageFaultsMaj            uint64
+	AlignmentFaultsSet       bool
+	AlignmentFaults          uint64
+	EmulationFaultsSet       bool
+	EmulationFaults          uint64
 }
 
 func getDomainStatsPerfFieldInfo(params *DomainStatsPerf) map[string]typedParamsFieldInfo {
@@ -2309,6 +2341,42 @@ func getDomainStatsPerfFieldInfo(params *DomainStatsPerf) map[string]typedParams
 			set: &params.RefCpuCyclesSet,
 			ul:  &params.RefCpuCycles,
 		},
+		"perf.cpu_clock": typedParamsFieldInfo{
+			set: &params.CpuClockSet,
+			ul:  &params.CpuClock,
+		},
+		"perf.task_clock": typedParamsFieldInfo{
+			set: &params.TaskClockSet,
+			ul:  &params.TaskClock,
+		},
+		"perf.page_faults": typedParamsFieldInfo{
+			set: &params.PageFaultsSet,
+			ul:  &params.PageFaults,
+		},
+		"perf.context_switches": typedParamsFieldInfo{
+			set: &params.ContextSwitchesSet,
+			ul:  &params.ContextSwitches,
+		},
+		"perf.cpu_migrations": typedParamsFieldInfo{
+			set: &params.CpuMigrationsSet,
+			ul:  &params.CpuMigrations,
+		},
+		"perf.page_faults_min": typedParamsFieldInfo{
+			set: &params.PageFaultsMinSet,
+			ul:  &params.PageFaultsMin,
+		},
+		"perf.page_faults_maj": typedParamsFieldInfo{
+			set: &params.PageFaultsMajSet,
+			ul:  &params.PageFaultsMaj,
+		},
+		"perf.alignment_faults": typedParamsFieldInfo{
+			set: &params.AlignmentFaultsSet,
+			ul:  &params.AlignmentFaults,
+		},
+		"perf.emulation_faults": typedParamsFieldInfo{
+			set: &params.EmulationFaultsSet,
+			ul:  &params.EmulationFaults,
+		},
 	}
 }
 
@@ -2357,12 +2425,12 @@ func getDomainStatsLengthsFieldInfo(params *domainStatsLengths) map[string]typed
 
 func (c *Connect) GetAllDomainStats(doms []*Domain, statsTypes DomainStatsTypes, flags ConnectGetAllDomainStatsFlags) ([]DomainStats, error) {
 	if C.LIBVIR_VERSION_NUMBER < 1002008 {
-		return []DomainStats{}, GetNotImplementedError()
+		return []DomainStats{}, GetNotImplementedError("virConnectGetAllDomainStats")
 	}
 	var ret C.int
 	var cstats *C.virDomainStatsRecordPtr
 	if len(doms) > 0 {
-		cdoms := make([]C.virDomainPtr, len(doms))
+		cdoms := make([]C.virDomainPtr, len(doms)+1)
 		for i := 0; i < len(doms); i++ {
 			cdoms[i] = doms[i].ptr
 		}

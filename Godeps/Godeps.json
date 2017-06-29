@@ -1,7 +1,7 @@
 {
 	"ImportPath": "github.com/r2d4/kvm-libmachine",
 	"GoVersion": "go1.7",
-	"GodepVersion": "v74",
+	"GodepVersion": "v79",
 	"Packages": [
 		"./..."
 	],
@@ -68,7 +68,8 @@
 		},
 		{
 			"ImportPath": "github.com/libvirt/libvirt-go",
-			"Rev": "3d300833767d3cc5cbb1c1d4d1780ede199eed61"
+			"Comment": "v3.4.0",
+			"Rev": "5ba8227244c30438609adcec6ea84dc1e688dfbd"
 		},
 		{
 			"ImportPath": "github.com/pkg/errors",

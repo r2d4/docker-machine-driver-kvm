@@ -29,5 +29,9 @@
 
 int virStreamSendAll_cgo(virStreamPtr st, int callbackID);
 int virStreamRecvAll_cgo(virStreamPtr st, int callbackID);
+int virStreamSparseSendAll_cgo(virStreamPtr st, int callbackID, int holeCallbackID, int skipCallbackID);
+int virStreamSparseRecvAll_cgo(virStreamPtr st, int callbackID, int holeCallbackID);
+
+int virStreamEventAddCallback_cgo(virStreamPtr st, int events, int callbackID);
 
 #endif /* LIBVIRT_GO_STREAM_CFUNCS_H__ */

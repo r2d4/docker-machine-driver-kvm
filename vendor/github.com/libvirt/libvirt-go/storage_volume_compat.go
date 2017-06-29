@@ -24,17 +24,24 @@
  *
  */
 
-#ifndef LIBVIRT_GO_STORAGE_POOL_EVENTS_CFUNCS_H__
-#define LIBVIRT_GO_STORAGE_POOL_EVENTS_CFUNCS_H__
+package libvirt
 
-void storagePoolEventLifecycleCallback_cgo(virConnectPtr c, virStoragePoolPtr d,
-					   int event, int detail, void* data);
-void storagePoolEventGenericCallback_cgo(virConnectPtr c, virStoragePoolPtr d,
-					 void* data);
+/*
+#cgo pkg-config: libvirt
+#include <libvirt/libvirt.h>
+#include <assert.h>
+#include "storage_volume_compat.h"
 
-int virConnectStoragePoolEventRegisterAny_cgo(virConnectPtr c,  virStoragePoolPtr d,
-					      int eventID, virConnectStoragePoolEventGenericCallback cb,
-					      long goCallbackId);
+int virStorageVolGetInfoFlagsCompat(virStorageVolPtr vol,
+				    virStorageVolInfoPtr info,
+				    unsigned int flags)
+{
+#if LIBVIR_VERSION_NUMBER < 3000000
+    assert(0); // Caller should have checked version
+#else
+    return virStorageVolGetInfoFlags(vol, info, flags);
+#endif
+}
 
-
-#endif /* LIBVIRT_GO_STORAGE_POOL_EVENTS_CFUNCS_H__ */
+*/
+import "C"

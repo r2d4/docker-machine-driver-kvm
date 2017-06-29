@@ -24,17 +24,13 @@
  *
  */
 
-#ifndef LIBVIRT_GO_STORAGE_POOL_EVENTS_CFUNCS_H__
-#define LIBVIRT_GO_STORAGE_POOL_EVENTS_CFUNCS_H__
+#ifndef LIBVIRT_GO_LXC_COMPAT_H__
+#define LIBVIRT_GO_LXC_COMPAT_H__
 
-void storagePoolEventLifecycleCallback_cgo(virConnectPtr c, virStoragePoolPtr d,
-					   int event, int detail, void* data);
-void storagePoolEventGenericCallback_cgo(virConnectPtr c, virStoragePoolPtr d,
-					 void* data);
+/* 2.0.0 */
 
-int virConnectStoragePoolEventRegisterAny_cgo(virConnectPtr c,  virStoragePoolPtr d,
-					      int eventID, virConnectStoragePoolEventGenericCallback cb,
-					      long goCallbackId);
+int virDomainLxcEnterCGroupCompat(virDomainPtr domain,
+				  unsigned int flags);
 
 
-#endif /* LIBVIRT_GO_STORAGE_POOL_EVENTS_CFUNCS_H__ */
+#endif /* LIBVIRT_GO_LXC_COMPAT_H__ */

@@ -24,17 +24,16 @@
  *
  */
 
-#ifndef LIBVIRT_GO_STORAGE_POOL_EVENTS_CFUNCS_H__
-#define LIBVIRT_GO_STORAGE_POOL_EVENTS_CFUNCS_H__
+#ifndef LIBVIRT_GO_EVENTS_CFUNCS_H__
+#define LIBVIRT_GO_EVENTS_CFUNCS_H__
 
-void storagePoolEventLifecycleCallback_cgo(virConnectPtr c, virStoragePoolPtr d,
-					   int event, int detail, void* data);
-void storagePoolEventGenericCallback_cgo(virConnectPtr c, virStoragePoolPtr d,
-					 void* data);
+int virEventAddHandle_cgo(int fd, int events, int callbackID);
+int virEventAddTimeout_cgo(int freq, int callbackID);
+void virEventRegisterImpl_cgo(void);
 
-int virConnectStoragePoolEventRegisterAny_cgo(virConnectPtr c,  virStoragePoolPtr d,
-					      int eventID, virConnectStoragePoolEventGenericCallback cb,
-					      long goCallbackId);
+void eventHandleCallbackInvoke(int watch, int fd, int events, uintptr_t callback, uintptr_t opaque);
+void eventTimeoutCallbackInvoke(int timer, uintptr_t callback, uintptr_t opaque);
+void eventHandleCallbackFree(uintptr_t callback, uintptr_t opaque);
+void eventTimeoutCallbackFree(uintptr_t callback, uintptr_t opaque);
 
-
-#endif /* LIBVIRT_GO_STORAGE_POOL_EVENTS_CFUNCS_H__ */
+#endif /* LIBVIRT_GO_EVENTS_CFUNCS_H__ */

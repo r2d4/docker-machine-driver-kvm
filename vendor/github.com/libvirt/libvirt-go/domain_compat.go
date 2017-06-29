@@ -40,7 +40,7 @@ int virDomainCoreDumpWithFormatCompat(virDomainPtr domain,
 #if LIBVIR_VERSION_NUMBER < 1002003
     assert(0); // Caller should have checked version
 #else
-    return virDomainCoreDumpWithFormatCompat(domain, to, dumpformat, flags);
+    return virDomainCoreDumpWithFormat(domain, to, dumpformat, flags);
 #endif
 }
 
@@ -232,7 +232,7 @@ int virDomainGetPerfEventsCompat(virDomainPtr dom,
 #if LIBVIR_VERSION_NUMBER < 1003003
     assert(0); // Caller should have checked version
 #else
-    return virDomainGetPerfEventsCompat(dom, params, nparams, flags);
+    return virDomainGetPerfEvents(dom, params, nparams, flags);
 #endif
 }
 
@@ -245,7 +245,7 @@ int virDomainSetPerfEventsCompat(virDomainPtr dom,
 #if LIBVIR_VERSION_NUMBER < 1003003
     assert(0); // Caller should have checked version
 #else
-    return virDomainSetPerfEventsCompat(dom, params, nparams, flags);
+    return virDomainSetPerfEvents(dom, params, nparams, flags);
 #endif
 }
 
@@ -283,6 +283,31 @@ int virDomainSetGuestVcpusCompat(virDomainPtr domain,
     assert(0); // Caller should have checked version
 #else
     return virDomainSetGuestVcpus(domain, cpumap, state, flags);
+#endif
+}
+
+int virDomainSetVcpuCompat(virDomainPtr domain,
+			   const char *cpumap,
+			   int state,
+			   unsigned int flags)
+{
+#if LIBVIR_VERSION_NUMBER < 3001000
+    assert(0); // Caller should have checked version
+#else
+    return virDomainSetVcpu(domain, cpumap, state, flags);
+#endif
+}
+
+
+int virDomainSetBlockThresholdCompat(virDomainPtr domain,
+                                     const char *dev,
+                                     unsigned long long threshold,
+                                     unsigned int flags)
+{
+#if LIBVIR_VERSION_NUMBER < 3002000
+    assert(0); // Caller should have checked version
+#else
+    return virDomainSetBlockThreshold(domain, dev, threshold, flags);
 #endif
 }
 

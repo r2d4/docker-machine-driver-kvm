@@ -94,6 +94,25 @@ const (
 	STORAGE_XML_INACTIVE = StorageXMLFlags(C.VIR_STORAGE_XML_INACTIVE)
 )
 
+type StorageVolInfoFlags int
+
+const (
+	STORAGE_VOL_USE_ALLOCATION = StorageVolInfoFlags(C.VIR_STORAGE_VOL_USE_ALLOCATION)
+	STORAGE_VOL_GET_PHYSICAL   = StorageVolInfoFlags(C.VIR_STORAGE_VOL_GET_PHYSICAL)
+)
+
+type StorageVolUploadFlags int
+
+const (
+	STORAGE_VOL_UPLOAD_SPARSE_STREAM = StorageVolUploadFlags(C.VIR_STORAGE_VOL_UPLOAD_SPARSE_STREAM)
+)
+
+type StorageVolDownloadFlags int
+
+const (
+	STORAGE_VOL_DOWNLOAD_SPARSE_STREAM = StorageVolDownloadFlags(C.VIR_STORAGE_VOL_DOWNLOAD_SPARSE_STREAM)
+)
+
 type StorageVol struct {
 	ptr C.virStorageVolPtr
 }
@@ -113,16 +132,41 @@ func (v *StorageVol) Delete(flags StorageVolDeleteFlags) error {
 }
 
 func (v *StorageVol) Free() error {
-	if result := C.virStorageVolFree(v.ptr); result != 0 {
+	ret := C.virStorageVolFree(v.ptr)
+	if ret == -1 {
 		return GetLastError()
 	}
-	v.ptr = nil
+	return nil
+}
+
+func (c *StorageVol) Ref() error {
+	ret := C.virStorageVolRef(c.ptr)
+	if ret == -1 {
+		return GetLastError()
+	}
 	return nil
 }
 
 func (v *StorageVol) GetInfo() (*StorageVolInfo, error) {
 	var cinfo C.virStorageVolInfo
 	result := C.virStorageVolGetInfo(v.ptr, &cinfo)
+	if result == -1 {
+		return nil, GetLastError()
+	}
+	return &StorageVolInfo{
+		Type:       StorageVolType(cinfo._type),
+		Capacity:   uint64(cinfo.capacity),
+		Allocation: uint64(cinfo.allocation),
+	}, nil
+}
+
+func (v *StorageVol) GetInfoFlags(flags StorageVolInfoFlags) (*StorageVolInfo, error) {
+	if C.LIBVIR_VERSION_NUMBER < 3000000 {
+		return nil, GetNotImplementedError("virStorageVolGetInfoFlags")
+	}
+
+	var cinfo C.virStorageVolInfo
+	result := C.virStorageVolGetInfoFlagsCompat(v.ptr, &cinfo, C.uint(flags))
 	if result == -1 {
 		return nil, GetLastError()
 	}
@@ -192,7 +236,7 @@ func (v *StorageVol) WipePattern(algorithm StorageVolWipeAlgorithm, flags uint32
 	return nil
 }
 
-func (v *StorageVol) Upload(stream *Stream, offset, length uint64, flags uint32) error {
+func (v *StorageVol) Upload(stream *Stream, offset, length uint64, flags StorageVolUploadFlags) error {
 	if C.virStorageVolUpload(v.ptr, stream.ptr, C.ulonglong(offset),
 		C.ulonglong(length), C.uint(flags)) == -1 {
 		return GetLastError()
@@ -200,7 +244,7 @@ func (v *StorageVol) Upload(stream *Stream, offset, length uint64, flags uint32)
 	return nil
 }
 
-func (v *StorageVol) Download(stream *Stream, offset, length uint64, flags uint32) error {
+func (v *StorageVol) Download(stream *Stream, offset, length uint64, flags StorageVolDownloadFlags) error {
 	if C.virStorageVolDownload(v.ptr, stream.ptr, C.ulonglong(offset),
 		C.ulonglong(length), C.uint(flags)) == -1 {
 		return GetLastError()

@@ -203,6 +203,22 @@ type DomainEventDeviceRemovalFailed struct {
 
 type DomainEventDeviceRemovalFailedCallback func(c *Connect, d *Domain, event *DomainEventDeviceRemovalFailed)
 
+type DomainEventMetadataChange struct {
+	Type  int
+	NSURI string
+}
+
+type DomainEventMetadataChangeCallback func(c *Connect, d *Domain, event *DomainEventMetadataChange)
+
+type DomainEventBlockThreshold struct {
+	Dev       string
+	Path      string
+	Threshold uint64
+	Excess    uint64
+}
+
+type DomainEventBlockThresholdCallback func(c *Connect, d *Domain, event *DomainEventBlockThreshold)
+
 //export domainEventLifecycleCallback
 func domainEventLifecycleCallback(c C.virConnectPtr, d C.virDomainPtr,
 	event int, detail int,
@@ -533,6 +549,26 @@ func domainEventDeviceRemovedCallback(c C.virConnectPtr, d C.virDomainPtr,
 	}
 	callbackFunc := getCallbackId(goCallbackId)
 	callback, ok := callbackFunc.(DomainEventDeviceRemovedCallback)
+	if !ok {
+		panic("Inappropriate callback type called")
+	}
+	callback(connection, domain, eventDetails)
+
+}
+
+//export domainEventMetadataChangeCallback
+func domainEventMetadataChangeCallback(c C.virConnectPtr, d C.virDomainPtr,
+	mtype int, nsuri *C.char, goCallbackId int) {
+
+	domain := &Domain{ptr: d}
+	connection := &Connect{ptr: c}
+
+	eventDetails := &DomainEventMetadataChange{
+		Type:  (int)(mtype),
+		NSURI: C.GoString(nsuri),
+	}
+	callbackFunc := getCallbackId(goCallbackId)
+	callback, ok := callbackFunc.(DomainEventMetadataChangeCallback)
 	if !ok {
 		panic("Inappropriate callback type called")
 	}
@@ -897,6 +933,26 @@ func domainEventDeviceRemovalFailedCallback(c C.virConnectPtr, d C.virDomainPtr,
 	}
 	callbackFunc := getCallbackId(goCallbackId)
 	callback, ok := callbackFunc.(DomainEventDeviceRemovalFailedCallback)
+	if !ok {
+		panic("Inappropriate callback type called")
+	}
+	callback(connection, domain, eventDetails)
+
+}
+
+//export domainEventBlockThresholdCallback
+func domainEventBlockThresholdCallback(c C.virConnectPtr, d C.virDomainPtr, dev *C.char, path *C.char, threshold C.ulonglong, excess C.ulonglong, goCallbackId int) {
+	domain := &Domain{ptr: d}
+	connection := &Connect{ptr: c}
+
+	eventDetails := &DomainEventBlockThreshold{
+		Dev:       C.GoString(dev),
+		Path:      C.GoString(path),
+		Threshold: uint64(threshold),
+		Excess:    uint64(excess),
+	}
+	callbackFunc := getCallbackId(goCallbackId)
+	callback, ok := callbackFunc.(DomainEventBlockThresholdCallback)
 	if !ok {
 		panic("Inappropriate callback type called")
 	}
@@ -1332,6 +1388,44 @@ func (c *Connect) DomainEventDeviceRemovalFailedRegister(dom *Domain, callback D
 	}
 	ret := C.virConnectDomainEventRegisterAny_cgo(c.ptr, cdom,
 		C.VIR_DOMAIN_EVENT_ID_DEVICE_REMOVAL_FAILED,
+		C.virConnectDomainEventGenericCallback(callbackPtr),
+		C.long(goCallBackId))
+	if ret == -1 {
+		freeCallbackId(goCallBackId)
+		return 0, GetLastError()
+	}
+	return int(ret), nil
+}
+
+func (c *Connect) DomainEventMetadataChangeRegister(dom *Domain, callback DomainEventMetadataChangeCallback) (int, error) {
+	goCallBackId := registerCallbackId(callback)
+
+	callbackPtr := unsafe.Pointer(C.domainEventMetadataChangeCallback_cgo)
+	var cdom C.virDomainPtr
+	if dom != nil {
+		cdom = dom.ptr
+	}
+	ret := C.virConnectDomainEventRegisterAny_cgo(c.ptr, cdom,
+		C.VIR_DOMAIN_EVENT_ID_METADATA_CHANGE,
+		C.virConnectDomainEventGenericCallback(callbackPtr),
+		C.long(goCallBackId))
+	if ret == -1 {
+		freeCallbackId(goCallBackId)
+		return 0, GetLastError()
+	}
+	return int(ret), nil
+}
+
+func (c *Connect) DomainEventBlockThresholdRegister(dom *Domain, callback DomainEventBlockThresholdCallback) (int, error) {
+	goCallBackId := registerCallbackId(callback)
+
+	callbackPtr := unsafe.Pointer(C.domainEventBlockThresholdCallback_cgo)
+	var cdom C.virDomainPtr
+	if dom != nil {
+		cdom = dom.ptr
+	}
+	ret := C.virConnectDomainEventRegisterAny_cgo(c.ptr, cdom,
+		C.VIR_DOMAIN_EVENT_ID_BLOCK_THRESHOLD,
 		C.virConnectDomainEventGenericCallback(callbackPtr),
 		C.long(goCallBackId))
 	if ret == -1 {
