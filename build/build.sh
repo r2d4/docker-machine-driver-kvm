@@ -18,4 +18,5 @@ export CGO_ENABLED=1
 go install                                                         \
     -installsuffix "static"                                        \
     -ldflags "-X ${PKG}/pkg/version.VERSION=${VERSION}"            \
+    -tags libvirt.1.2.14					   \
     ./...
