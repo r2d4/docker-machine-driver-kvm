@@ -79,7 +79,7 @@ func getConnection() (*libvirt.Connect, error) {
 
 func closeDomain(dom *libvirt.Domain, conn *libvirt.Connect) error {
 	dom.Free()
-	if res, _ := conn.CloseConnection(); res != 0 {
+	if res, _ := conn.Close(); res != 0 {
 		return fmt.Errorf("Error closing connection CloseConnection() == %d, expected 0", res)
 	}
 	return nil
@@ -97,7 +97,7 @@ func (d *Driver) createDomain() (*libvirt.Domain, error) {
 	if err != nil {
 		return nil, errors.Wrap(err, "Error getting libvirt connection")
 	}
-	defer conn.CloseConnection()
+	defer conn.Close()
 
 	dom, err := conn.DomainDefineXML(domainXml.String())
 	if err != nil {

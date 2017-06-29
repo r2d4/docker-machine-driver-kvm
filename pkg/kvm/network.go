@@ -31,7 +31,7 @@ func (d *Driver) createNetwork() error {
 	if err != nil {
 		return errors.Wrap(err, "getting libvirt connection")
 	}
-	defer conn.CloseConnection()
+	defer conn.Close()
 
 	tmpl := template.Must(template.New("network").Parse(networkTmpl))
 	var networkXml bytes.Buffer
@@ -64,12 +64,13 @@ func (d *Driver) createNetwork() error {
 }
 
 func (d *Driver) lookupIP() (string, error) {
-	dom, conn, err := d.getDomain()
+	conn, err := getConnection()
 	if err != nil {
 		return "", errors.Wrap(err, "getting connection and domain")
 	}
 
-	defer closeDomain(dom, conn)
+	defer conn.Close()
+
 
 	libVersion, err := conn.GetLibVersion()
 	if err != nil {
@@ -81,21 +82,22 @@ func (d *Driver) lookupIP() (string, error) {
 		return d.lookupIPFromStatusFile()
 	}
 
-	return d.lookupIPFromDomain(dom)
+	return d.lookupIPFromNetwork(conn)
 }
 
-func (d *Driver) lookupIPFromDomain(dom *libvirt.Domain) (string, error) {
-	domIfaces, err := dom.ListAllInterfaceAddresses(0)
+func (d *Driver) lookupIPFromNetwork(conn *libvirt.Connect) (string, error) {
+	network, err := conn.LookupNetworkByName(d.NetworkName)
 	if err != nil {
-		return "", errors.Wrap(err, "list all domain interface addresses")
+		return "", errors.Wrap(err, "looking up network by name")
 	}
-	if len(domIfaces) != 2 {
-		return "", fmt.Errorf("Domain has wrong number of interfaces, got %d, expected 2", len(domIfaces))
+	leases, err := network.GetDHCPLeases()
+	if err != nil {
+		return "", errors.Wrap(err, "looking up dhcp leases for network")
 	}
 
-	for _, domIface := range domIfaces {
-		if domIface.Name == d.NetworkName {
-			return domIface.Addrs[0].Addr, nil
+	for _, lease := range leases {
+		if lease.Type == libvirt.IP_ADDR_TYPE_IPV4 {
+			return lease.IPaddr, nil
 		}
 	}
 

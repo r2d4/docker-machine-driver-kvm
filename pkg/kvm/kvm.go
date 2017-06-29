@@ -351,7 +351,7 @@ func (d *Driver) Remove() error {
 	if err != nil {
 		return errors.Wrap(err, "getting connection")
 	}
-	defer conn.CloseConnection()
+	defer conn.Close()
 
 	//Tear down network and disk if they exist
 	network, _ := conn.LookupNetworkByName(d.NetworkName)
