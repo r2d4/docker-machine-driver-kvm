@@ -23,12 +23,13 @@ import (
 )
 
 const (
-	defaultIsoURL    = "https://storage.googleapis.com/minikube/iso/minikube-v0.18.0.iso"
-	defaultCPU       = 1
-	defaultDiskSize  = 20000
-	defaultMemory    = 2048
-	qemusystem       = "qemu:///system"
-	defaultCacheMode = "threads"
+	defaultIsoURL      = "https://storage.googleapis.com/minikube/iso/minikube-v0.20.0.iso"
+	defaultCPU         = 1
+	defaultDiskSize    = 20000
+	defaultMemory      = 2048
+	qemusystem         = "qemu:///system"
+	defaultCacheMode   = "threads"
+	defaultNetworkName = "minikube-net"
 )
 
 var defaultHostFolder = os.Getenv("HOME")
@@ -269,7 +270,7 @@ func (d *Driver) Create() error {
 	}
 
 	log.Info("Creating network...")
-	err := d.createNetwork()
+	err := d.createNetworks()
 	if err != nil {
 		return errors.Wrap(err, "creating network")
 	}
