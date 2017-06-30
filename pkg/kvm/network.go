@@ -124,17 +124,17 @@ func (d *Driver) lookupIPFromNetwork(conn *libvirt.Connect) (string, error) {
 		return "", errors.Wrap(err, "looking up dhcp leases for network")
 	}
 
+	ip := ""
 	for _, lease := range leases {
 		if lease.Type == libvirt.IP_ADDR_TYPE_IPV4 {
-			return lease.IPaddr, nil
+			ip = lease.IPaddr
 		}
 	}
 
-	// No IP has been allocated yet
-	return "", nil
+	return ip, nil
 }
 
-// This is for older versions of libvirt that don't support listAllInterfaceAddresses
+// This is for older versions of libvirt that don't support GetDHCPLeases
 func (d *Driver) lookupIPFromStatusFile() (string, error) {
 	leasesFile := fmt.Sprintf("/var/lib/libvirt/dnsmasq/%s.leases", d.NetworkName)
 	leases, err := ioutil.ReadFile(leasesFile)
